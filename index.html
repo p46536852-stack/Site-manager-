@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Site Manager</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#d9780b">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{--bg:#e6e9ec;--card:#fff;--ink:#1d2830;--mut:#64717c;--line:#d0d6dc;--acc:#d9780b;--onacc:#fff;--pos:#17803d;--neg:#c0392b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14191e;--card:#1e262d;--ink:#e7ebee;--mut:#93a0ab;--line:#33404a;--acc:#f0a042;--onacc:#14191e;--pos:#4cc47c;--neg:#ef7a6c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14191e;--card:#1e262d;--ink:#e7ebee;--mut:#93a0ab;--line:#33404a;--acc:#f0a042;--onacc:#14191e;--pos:#4cc47c;--neg:#ef7a6c;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:620px;margin:0 auto;padding:8px 8px 40px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin:0 0 10px}
+.site{border-top:4px solid var(--acc)}
+.r{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.w{flex-wrap:wrap}
+h3{margin:0;font-size:17px}
+h4{margin:12px 0 4px;font-size:13px;color:var(--mut);font-weight:700}
+.row{display:grid;gap:4px;align-items:center;padding:4px 0;border-top:1px solid var(--line)}
+.mr{grid-template-columns:1.3fr .8fr 1fr 1fr .9fr}
+.lr{grid-template-columns:1.2fr 1fr .9fr .9fr .9fr}
+.hd{border-top:0;font-size:10px;color:var(--mut);line-height:1.1}
+.nm{font-weight:600;overflow-wrap:anywhere}
+.u{font-size:10px;color:var(--mut);font-weight:400}
+.v{font-weight:700;text-align:right}
+input,select{width:100%;box-sizing:border-box;font:inherit;padding:7px 4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);min-width:0}
+label{display:block;font-size:11px;color:var(--mut);margin-bottom:2px}
+.b{width:auto;border:0;background:var(--acc);color:var(--onacc);font-weight:700;padding:8px 12px;border-radius:7px;white-space:nowrap;font-family:inherit;font-size:14px}
+.b.g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+.b.x{background:var(--neg);color:#fff}
+.b.s{padding:2px 7px;font-size:12px}
+.neg{color:var(--neg)}.pos{color:var(--pos)}.m{color:var(--mut);font-size:12px}
+summary{font-weight:700;cursor:pointer}
+.ln{display:flex;justify-content:space-between;gap:6px;padding:4px 0;border-top:1px solid var(--line);font-size:13px}
+.ln span{flex:1}.ln span:last-child{text-align:right}
+.tt{display:flex;justify-content:space-between;font-weight:700;padding:5px 0 0;border-top:2px solid var(--line);margin-top:3px}
+.add{display:grid;grid-template-columns:1.3fr 1fr auto;gap:6px;margin-top:8px}
+</style></head><body><div id="app"></div>
+<script>
+const MS=[['cement','Cement','bags'],['agg','Aggregate','units'],['steel','Steel','kg'],['brick','Bricks','nos'],['msand','M-Sand','units']];
+const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+let S;try{S=JSON.parse(localStorage.getItem('sm1'))}catch(e){}
+if(!S||!S.sites)S={sites:[]};
+const save=()=>{try{localStorage.setItem('sm1',JSON.stringify(S))}catch(e){}};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const pd=s=>{const[a,b,c]=s.split('-');return new Date(a,b-1,c)};
+const n=v=>parseFloat(v)||0;
+const f=v=>(Math.round(v*100)/100).toLocaleString('en-IN');
+const esc=t=>String(t).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const gs=id=>S.sites.find(s=>s.id==id);
+let date=iso(new Date()),from,to,res=false,del=null,shut={};
+function wk(){const d=pd(date);d.setDate(d.getDate()-d.getDay());from=iso(d);d.setDate(d.getDate()+6);to=iso(d);res=false}
+wk();
+const $=id=>document.getElementById(id);
+const put=(id,t,c)=>{const e=$(id);if(e){e.textContent=t;e.className='v '+c}};
+
+function openS(s,k){let t=n(s.start[k]);Object.keys(s.mat).sort().forEach(d=>{if(d<date){const e=s.mat[d][k];if(e){if(e.o!==''&&e.o!=null)t=n(e.o);t+=n(e.i)-n(e.u)}}});return t}
+const hasO=e=>e&&e.o!==''&&e.o!=null;
+function calc(){S.sites.forEach(s=>{
+ MS.forEach(([k])=>{const c=openS(s,k),e=(s.mat[date]||{})[k]||{},o=hasO(e)?n(e.o):c,b=o+n(e.i)-n(e.u);const q=$('o'+s.id+k);if(q)q.placeholder=f(c);put('b'+s.id+k,f(b),b<0?'neg':'')});
+ s.labs.forEach(l=>{const a=(s.att[date]||{})[l.id]||{},b=n(a.d)*n(l.wage)-n(a.adv);put('b'+s.id+l.id,'₹'+f(b),b<0?'neg':'pos')})})}
+
+function addSite(){const v=$('sn').value.trim();if(!v)return;S.sites.push({id:uid(),name:v,start:{},labs:[],mat:{},att:{}});save();render()}
+function delSite(i){if(del!==i){del=i;render();return}S.sites=S.sites.filter(x=>x.id!=i);del=null;save();render()}
+function tog(i){shut[i]=!shut[i];render()}
+function setM(i,k,t,v){const s=gs(i);s.mat[date]=s.mat[date]||{};s.mat[date][k]=s.mat[date][k]||{};s.mat[date][k][t]=v;save();calc()}
+function setS(i,k,v){gs(i).start[k]=v;save();calc()}
+function addL(i){const s=gs(i),nm=$('ln'+i).value.trim();if(!nm)return;s.labs.push({id:uid(),name:nm,wage:n($('lw'+i).value)});save();render()}
+function setA(i,id,t,v){const s=gs(i);s.att[date]=s.att[date]||{};s.att[date][id]=s.att[date][id]||{};s.att[date][id][t]=v;save();calc()}
+function setW(i,id,v){gs(i).labs.find(l=>l.id==id).wage=n(v);save();calc()}
+function delL(i,id){if(del!==id){del=id;render();return}const s=gs(i);s.labs=s.labs.filter(l=>l.id!=id);del=null;save();render()}
+function setD(v){if(!v)return;date=v;wk();render()}
+function shift(k){const d=pd(date);d.setDate(d.getDate()+k);setD(iso(d))}
+
+function matH(s){
+ let h=`<h4>MATERIALS <span class="u">Stock = what you already have (blank = yesterday's balance)</span></h4><div class="row mr hd"><span></span><span class="v">Stock</span><span class="v">Received</span><span class="v">Used</span><span class="v">Balance</span></div>`;
+ h+=MS.map(([k,nm,u])=>{const e=(s.mat[date]||{})[k]||{};
+  return `<div class="row mr"><span class="nm">${nm}<br><span class="u">${u}</span></span><input id="o${s.id}${k}" inputmode="decimal" value="${e.o??''}" onchange="setM('${s.id}','${k}','o',this.value)">
+  <input inputmode="decimal" value="${e.i??''}" onchange="setM('${s.id}','${k}','i',this.value)">
+  <input inputmode="decimal" value="${e.u??''}" onchange="setM('${s.id}','${k}','u',this.value)"><span class="v" id="b${s.id}${k}"></span></div>`}).join('');
+ 
+ return h}
+
+function labH(s){
+ const A=s.att[date]||{};
+ const O=[['','—'],['0','Absent'],['0.5','Half'],['1','1 day'],['1.5','1.5'],['2','2 days']];
+ let h=`<h4>LABOUR</h4><div class="row lr hd"><span>Name</span><span>Attendance</span><span>Advance ₹</span><span>1 day wage ₹</span><span class="v">Balance</span></div>`;
+ h+=s.labs.map(l=>{const a=A[l.id]||{};
+  return `<div class="row lr"><span class="nm">${esc(l.name)} <button class="b s ${del===l.id?'x':'g'}" onclick="delL('${s.id}','${l.id}')">${del===l.id?'Delete?':'✕'}</button></span>
+  <select onchange="setA('${s.id}','${l.id}','d',this.value)">${O.map(o=>`<option value="${o[0]}" ${String(a.d??'')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>
+  <input inputmode="numeric" value="${a.adv??''}" onchange="setA('${s.id}','${l.id}','adv',this.value)">
+  <input inputmode="numeric" value="${l.wage}" onchange="setW('${s.id}','${l.id}',this.value)"><span class="v" id="b${s.id}${l.id}"></span></div>`}).join('');
+ h+=`<div class="add"><input id="ln${s.id}" placeholder="New labour name"><input id="lw${s.id}" inputmode="numeric" placeholder="Wage ₹"><button class="b" onclick="addL('${s.id}')">Add</button></div>`;
+ return h}
+
+function siteH(s){const o=!shut[s.id];
+ return `<div class="c site"><div class="r"><h3 onclick="tog('${s.id}')" style="flex:1">${o?'▾':'▸'} ${esc(s.name)}</h3><button class="b s ${del===s.id?'x':'g'}" onclick="delSite('${s.id}')">${del===s.id?'Delete site?':'✕'}</button></div>${o?matH(s)+labH(s):''}</div>`}
+
+function tot(){
+ let GD=0,GE=0,GA=0,out='';
+ S.sites.forEach(s=>{let SD=0,SE=0,SA=0,rows='';
+  s.labs.forEach(l=>{let D=0,E=0,A=0,ds='';
+   for(let x=pd(from),i=0;iso(x)<=to&&i<400;x.setDate(x.getDate()+1),i++){
+    const k=iso(x),a=(s.att[k]||{})[l.id];if(!a||(a.d===''||a.d==null)&&!n(a.adv))continue;
+    const d=n(a.d),e=d*n(l.wage),v=n(a.adv);D+=d;E+=e;A+=v;
+    ds+=`<div class="ln"><span>${DN[x.getDay()]} ${k.slice(8)}/${k.slice(5,7)}</span><span>${a.d===''||a.d==null?'—':d+' d'}</span><span>adv ₹${f(v)}</span><span>₹${f(e-v)}</span></div>`}
+   SD+=D;SE+=E;SA+=A;
+   rows+=`<details><summary>${esc(l.name)} — ${f(D)} d · ₹${f(E)} − ₹${f(A)} = <span class="${E-A<0?'neg':'pos'}">₹${f(E-A)}</span></summary>${ds||'<span class="m">No entries</span>'}</details>`});
+  GD+=SD;GE+=SE;GA+=SA;
+  out+=`<div style="margin-top:8px"><b>${esc(s.name)}</b>${rows||'<div class="m">No labour</div>'}<div class="tt"><span>Site balance</span><span class="${SE-SA<0?'neg':'pos'}">₹${f(SE-SA)}</span></div></div>`});
+ return `<div class="c" style="border:2px solid var(--acc)"><b>Totals ${from.slice(8)}/${from.slice(5,7)} to ${to.slice(8)}/${to.slice(5,7)}</b>
+ <div class="ln"><span>All sites: days</span><span>${f(GD)}</span></div><div class="ln"><span>Earned</span><span>₹${f(GE)}</span></div><div class="ln"><span>Advance</span><span>₹${f(GA)}</span></div>
+ <div class="tt"><span>Balance to pay</span><span class="${GE-GA<0?'neg':'pos'}">₹${f(GE-GA)}</span></div>${out}</div>`}
+
+function render(){
+ let h=`<div class="c"><div class="r" style="flex-wrap:nowrap"><button class="b g" onclick="shift(-1)">◀</button><input type="date" value="${date}" onchange="setD(this.value)"><button class="b g" onclick="shift(1)">▶</button></div>
+ <div class="add" style="grid-template-columns:1fr auto"><input id="sn" placeholder="New site name"><button class="b" onclick="addSite()">Add site</button></div></div>
+ <div class="c"><div class="r w"><div style="flex:1"><label>From</label><input type="date" value="${from}" onchange="from=this.value;res=false"></div><div style="flex:1"><label>To</label><input type="date" value="${to}" onchange="to=this.value;res=false"></div></div>
+ <div class="r w" style="margin-top:8px"><button class="b" onclick="res=true;render()">Calculate Totals</button><button class="b g" onclick="wk();render()">This week (Sun–Sat)</button></div></div>`;
+ if(res)h+=tot();
+ h+=S.sites.length?S.sites.map(siteH).join(''):'<p class="m">Add your first site above to get started.</p>';
+ $('app').innerHTML=h;calc()}
+render();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script></body></html>
